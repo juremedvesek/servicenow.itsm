@@ -10,18 +10,31 @@ __metaclass__ = type
 from . import choices
 
 
+INCIDENT_QUERY = "incident"
+
+
 empty = ("", "")
 
-
-def get_new_payload_mapping(table_client):
-    choices_client = choices.ChoicesClient(table_client)
-    incident_choices = choices_client.get_grouped_choices("incident")
-
+def incident_mapping(choices):
     correct = dict(
-        impact=incident_choices["severity"],
-        urgency=incident_choices["severity"],
-        state=incident_choices["state"],
-        hold_reason=incident_choices["hold_reason"] + [empty],
-        close_code=incident_choices["close_code"] + [empty]
+        impact=choices["severity"],
+        urgency=choices["severity"],
+        state=choices["state"],
+        hold_reason=choices["hold_reason"] + [empty],
+        close_code=choices["close_code"] + [empty]
     )
     return correct
+
+
+#def get_new_payloadi_mapping(table_client):
+#    choices_client = choices.ChoicesClient(table_client)
+#    incident_choices = choices_client.get_grouped_choices("incident")
+#
+#    correct = dict(
+#        impact=incident_choices["severity"],
+#        urgency=incident_choices["severity"],
+#        state=incident_choices["state"],
+#        hold_reason=incident_choices["hold_reason"] + [empty],
+#        close_code=incident_choices["close_code"] + [empty]
+#    )
+#    return correct

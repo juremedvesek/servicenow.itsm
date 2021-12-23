@@ -184,8 +184,8 @@ records:
 
 from ansible.module_utils.basic import AnsibleModule
 
-from ..module_utils import arguments, attachment, client, errors, query, table, utils
-from ..module_utils.incident import get_new_payload_mapping
+from ..module_utils import arguments, attachment, client, errors, query, table, utils, choices
+from ..module_utils.incident import INCIDENT_QUERY, incident_mapping
 
 
 def remap_caller(query, table_client):
@@ -214,9 +214,8 @@ def sysparms_query(module, table_client, mapper):
     return query.serialize_query(query.map_query_values(remap_query, mapper))
 
 
-def run(module, table_client, attachment_client):
-    PAYLOAD_FIELDS_MAPPING = get_new_payload_mapping(table_client)
-    mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn) #module.fail_json)
+def run(module, table_client, choices_client, attachment_client):
+    mapper = utils.PayloadMapper(choices_client.get_grouped_choices(), module.warn) #module.fail_json)
 
     if module.params["query"]:
         query = {"sysparm_query": sysparms_query(module, table_client, mapper)}
@@ -247,11 +246,12 @@ def main():
     try:
         snow_client = client.Client(**module.params["instance"])
         table_client = table.TableClient(snow_client)
-
         attachment_client = attachment.AttachmentClient(snow_client)
-        records = run(module, table_client, attachment_client)
+        choices_client = choices.ChoicesClient(table_client, INCIDENT_QUERY, incident_mapping)
+        records = run(module, table_client, choices_client, attachment_client)
         module.exit_json(changed=False, records=records)
     except errors.ServiceNowError as e:
+        raise
         module.fail_json(msg=str(e))
 
 

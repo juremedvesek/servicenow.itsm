@@ -21,11 +21,11 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestEnsureAbsent:
-    def test_delete_incident(self, create_module, table_client, attachment_client):
+    def test_delete_incident(self, create_module, table_client, choices_client, attachment_client):
         module = create_module(
             params=dict(
                 instance=dict(host="my.host.name", username="user", password="pass"),
-                state="absent",
+                state="Absent",
                 number="INC0000001",
                 sys_id="1234",
             )
@@ -34,32 +34,40 @@ class TestEnsureAbsent:
             state="7", number="INC0000001", sys_id="1234"
         )
 
-        result = incident.ensure_absent(module, table_client, attachment_client)
+        choices_client.get_grouped_choices.return_value={
+           "state": [
+                ("7", "Closed")
+            ]
+        }
+
+        result = incident.ensure_absent(module, table_client, choices_client, attachment_client)
 
         table_client.delete_record.assert_called_once()
         assert result == (
             True,
             None,
             dict(
-                before=dict(state="closed", number="INC0000001", sys_id="1234"),
+                before=dict(state="Closed", number="INC0000001", sys_id="1234"),
                 after=None,
             ),
         )
 
     def test_delete_incident_not_present(
-        self, create_module, table_client, attachment_client
+        self, create_module, table_client, choices_client, attachment_client
     ):
         module = create_module(
             params=dict(
                 instance=dict(host="my.host.name", username="user", password="pass"),
-                state="absent",
+                state="Absent",
                 number=None,
                 sys_id="1234",
             ),
         )
         table_client.get_record.return_value = None
 
-        result = incident.ensure_absent(module, table_client, attachment_client)
+        choices_client.get_grouped_choices.return_value={}
+
+        result = incident.ensure_absent(module, table_client, choices_client, attachment_client)
 
         table_client.delete_record.assert_not_called()
         assert result == (False, None, dict(before=None, after=None))
@@ -126,7 +134,7 @@ class TestBuildPayload:
 
 class TestValidateParams:
     VALID_PARAMS = dict(
-        state="resolved", close_code="Solved (Permanently)", close_notes="Solved"
+        state="Resolved", close_code="Solved (Permanently)", close_notes="Solved"
     )
 
     @pytest.mark.parametrize("missing_field", ["close_code", "close_notes"])
@@ -143,16 +151,16 @@ class TestValidateParams:
 
 class TestEnsurePresent:
     def test_ensure_present_create_new(
-        self, create_module, table_client, attachment_client
+        self, create_module, table_client, choices_client, attachment_client
     ):
         module = create_module(
             params=dict(
                 instance=dict(host="my.host.name", username="user", password="pass"),
-                state="new",
+                state="New",
                 caller=None,
                 short_description="Test incident",
-                impact="low",
-                urgency="low",
+                impact="3 - Low",
+                urgency="3 - Low",
                 number=None,
                 sys_id=None,
                 description=None,
@@ -173,28 +181,43 @@ class TestEnsurePresent:
         )
         attachment_client.upload_records.return_value = []
 
-        result = incident.ensure_present(module, table_client, attachment_client)
+        choices_client.get_grouped_choices.return_value={
+            "state": [
+                ("1", "New"),
+                ("2", "In progress")
+            ],
+            "impact": [
+                ("3", "3 - Low")
+            ],
+            "urgency": [
+                ("3", "3 - Low")
+            ]
+        }
+
+
+        result = incident.ensure_present(module, table_client, choices_client, attachment_client)
 
         table_client.create_record.assert_called_once()
+        print(result)
         assert result == (
             True,
             dict(
-                state="new",
+                state="New",
                 number="INC0000001",
                 short_description="Test incident",
-                impact="low",
-                urgency="low",
+                impact="3 - Low",
+                urgency="3 - Low",
                 sys_id="1234",
                 attachments=[],
             ),
             dict(
                 before=None,
                 after=dict(
-                    state="new",
+                    state="New",
                     number="INC0000001",
                     short_description="Test incident",
-                    impact="low",
-                    urgency="low",
+                    impact="3 - Low",
+                    urgency="3 - Low",
                     sys_id="1234",
                     attachments=[],
                 ),
@@ -202,12 +225,12 @@ class TestEnsurePresent:
         )
 
     def test_ensure_present_nothing_to_do(
-        self, create_module, table_client, attachment_client
+        self, create_module, table_client, choices_client, attachment_client
     ):
         module = create_module(
             params=dict(
                 instance=dict(host="my.host.name", username="user", password="pass"),
-                state="new",
+                state="New",
                 number="INC0000001",
                 caller=None,
                 short_description="Test incident",
@@ -231,13 +254,20 @@ class TestEnsurePresent:
         attachment_client.update_records.return_value = []
         attachment_client.list_records.return_value = []
 
-        result = incident.ensure_present(module, table_client, attachment_client)
+        choices_client.get_grouped_choices.return_value={
+            "state": [
+                ("1", "New"),
+                ("2", "In progress")
+            ]
+        }
+
+        result = incident.ensure_present(module, table_client, choices_client, attachment_client)
 
         table_client.get_record.assert_called_once()
         assert result == (
             False,
             dict(
-                state="new",
+                state="New",
                 number="INC0000001",
                 short_description="Test incident",
                 attachments=[],
@@ -245,14 +275,14 @@ class TestEnsurePresent:
             ),
             dict(
                 before=dict(
-                    state="new",
+                    state="New",
                     number="INC0000001",
                     short_description="Test incident",
                     attachments=[],
                     sys_id="1234",
                 ),
                 after=dict(
-                    state="new",
+                    state="New",
                     number="INC0000001",
                     short_description="Test incident",
                     attachments=[],
@@ -262,12 +292,12 @@ class TestEnsurePresent:
         )
 
     def test_ensure_present_update(
-        self, mocker, create_module, table_client, attachment_client
+        self, mocker, create_module, table_client, choices_client, attachment_client
     ):
         module = create_module(
             params=dict(
                 instance=dict(host="my.host.name", username="user", password="pass"),
-                state="in_progress",
+                state="In progress",
                 number="INC0000001",
                 caller="admin",
                 short_description="Test incident",
@@ -284,7 +314,7 @@ class TestEnsurePresent:
         )
         payload_mocker = mocker.patch.object(incident, "build_payload")
         payload_mocker.return_value = dict(
-            state="in_progress",
+            state="In progress",
             number="INC0000001",
             short_description="Test incident",
             sys_id="1234",
@@ -304,13 +334,21 @@ class TestEnsurePresent:
         attachment_client.update_records.return_value = []
         attachment_client.list_records.return_value = []
 
-        result = incident.ensure_present(module, table_client, attachment_client)
+        choices_client.get_grouped_choices.return_value = {
+            "state": [
+                ("1", "New"),
+                ("2", "In progress")
+            ]
+        }
+
+
+        result = incident.ensure_present(module, table_client, choices_client, attachment_client)
 
         table_client.update_record.assert_called_once()
         assert result == (
             True,
             dict(
-                state="in_progress",
+                state="In progress",
                 number="INC0000001",
                 short_description="Test incident",
                 attachments=[],
@@ -318,14 +356,14 @@ class TestEnsurePresent:
             ),
             dict(
                 before=dict(
-                    state="new",
+                    state="New",
                     number="INC0000001",
                     short_description="Test incident",
                     attachments=[],
                     sys_id="1234",
                 ),
                 after=dict(
-                    state="in_progress",
+                    state="In progress",
                     number="INC0000001",
                     short_description="Test incident",
                     attachments=[],

@@ -157,7 +157,7 @@ from ..module_utils import (
     utils,
     validation,
 )
-from ..module_utils.incident import get_new_payload_mapping
+from ..module_utils.incident import INCIDENT_QUERY, incident_mapping
 
 DIRECT_PAYLOAD_FIELDS = (
     "state",
@@ -171,9 +171,8 @@ DIRECT_PAYLOAD_FIELDS = (
 )
 
 
-def ensure_absent(module, table_client, attachment_client):
-    PAYLOAD_FIELDS_MAPPING = get_new_payload_mapping(table_client)
-    mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn)
+def ensure_absent(module, table_client, choices_client, attachment_client):
+    mapper = utils.PayloadMapper(choices_client.get_grouped_choices(), module.warn)
     query = utils.filter_dict(module.params, "sys_id", "number")
     incident = table_client.get_record("incident", query)
 
@@ -215,9 +214,8 @@ def validate_params(params, incident=None):
         )
 
 
-def ensure_present(module, table_client, attachment_client):
-    PAYLOAD_FIELDS_MAPPING = get_new_payload_mapping(table_client)
-    mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn)
+def ensure_present(module, table_client, choices_client, attachment_client):
+    mapper = utils.PayloadMapper(choices_client.get_grouped_choices(), module.warn)
     query = utils.filter_dict(module.params, "sys_id", "number")
     payload = build_payload(module, table_client)
     attachments = attachment.transform_metadata_list(
@@ -274,10 +272,10 @@ def ensure_present(module, table_client, attachment_client):
     return True, new, dict(before=old, after=new)
 
 
-def run(module, table_client, attachment_client):
+def run(module, table_client, choices_client, attachment_client):
     if module.params["state"] == "Absent":
-        return ensure_absent(module, table_client, attachment_client)
-    return ensure_present(module, table_client, attachment_client)
+        return ensure_absent(module, table_client, choices_client, attachment_client)
+    return ensure_present(module, table_client, choices_client, attachment_client)
 
 
 def main():
@@ -334,7 +332,10 @@ def main():
         snow_client = client.Client(**module.params["instance"])
         table_client = table.TableClient(snow_client)
         attachment_client = attachment.AttachmentClient(snow_client)
-        changed, record, diff = run(module, table_client, attachment_client)
+        
+        choices_client = choices.ChoicesClient(table_client, INCIDENT_QUERY, incident_mapping)
+
+        changed, record, diff = run(module, table_client, choices_client, attachment_client)
         module.exit_json(changed=changed, record=record, diff=diff)
     except errors.ServiceNowError as e:
         module.fail_json(msg=str(e))

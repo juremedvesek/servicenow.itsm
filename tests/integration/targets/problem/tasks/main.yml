@@ -121,13 +121,18 @@
       servicenow.itsm.problem:
         sys_id: "{{ assigned_problem.record.sys_id }}"
         state: root_cause_analysis
-        cause_notes: cause
+        # cause_notes: cause
       register: analyzed_problem
+  
+    - name: fdsfdsgsfdg
+      debug:
+        var: analyzed_problem
+
     - ansible.builtin.assert:
         that:
           - analyzed_problem is changed
           - analyzed_problem.record.state == "root_cause_analysis"
-          - analyzed_problem.record.cause_notes == "cause"
+            #- analyzed_problem.record.cause_notes == "cause"
 
     - name: Start fixing the problem
       servicenow.itsm.problem:

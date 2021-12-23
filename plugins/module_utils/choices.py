@@ -10,7 +10,9 @@ __metaclass__ = type
 from . import errors
 
 class ChoicesClient:
-    def __init__(self, table_client):
+    def __init__(self, table_client, table_name, mapping):
+        self.table_client = table_client
+        self.table_name = table_name
         self.table_client = table_client
 
     def get_choices(self, table_name, element=None):
@@ -32,7 +34,8 @@ class ChoicesClient:
             result[key] = bucket
         return result
 
-    def get_grouped_choices(self, table_name):
-        data = self.get_choices(table_name)
+    def get_grouped_choices(self):
+        data = self.get_choices(self.table_name)
         grouped = self.group_choices(data)
-        return grouped
+        mapped = self.mapping(grouped)
+        return mapping
