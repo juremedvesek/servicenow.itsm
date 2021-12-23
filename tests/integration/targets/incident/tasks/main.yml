@@ -16,10 +16,10 @@
     - name: Create test incident - check mode
       servicenow.itsm.incident: &create-incident
         caller: admin
-        state: new
+        state: "New"
         short_description: Test incident
-        impact: low
-        urgency: low
+        impact: "3 - Low"
+        urgency: "3 - Low"
         attachments:
           - path: targets/incident/res/sample_file.txt
       check_mode: true
@@ -28,9 +28,9 @@
     - ansible.builtin.assert: &create-incident-result
         that:
           - result is changed
-          - result.record.state == "new"
-          - result.record.impact == "low"
-          - result.record.urgency == "low"
+          - result.record.state == "New"
+          - result.record.impact == "3 - Low"
+          - result.record.urgency == "3 - Low"
           - result.record.attachments | length != 0
           - result.record.attachments[0].file_name == "sample_file.txt"
 
@@ -54,17 +54,17 @@
     - ansible.builtin.assert:
         that:
           - result.records[0].number == test_result.record.number
-          - result.records[0].state == "new"
-          - result.records[0].impact == "low"
-          - result.records[0].urgency == "low"
+          - result.records[0].state == "New"
+          - result.records[0].impact == "3 - Low"
+          - result.records[0].urgency == "3 - Low"
 
 
     - name: Update incident with same urgency and impact - unchanged
       servicenow.itsm.incident:
         caller: admin
         number: "{{ test_result.record.number }}"
-        impact: low
-        urgency: low
+        impact: "3 - Low"
+        urgency: "3 - Low"
       register: result
 
     - ansible.builtin.assert:
@@ -76,18 +76,18 @@
       servicenow.itsm.incident: &update-incident
         caller: admin
         number: "{{ test_result.record.number }}"
-        state: in_progress
-        impact: high
-        urgency: high
+        state: "In Progress"
+        impact: "1 - High"
+        urgency: "1 - High"
       check_mode: true
       register: result
 
     - ansible.builtin.assert: &update-incident-result
         that:
           - result is changed
-          - result.record.state == "in_progress"
-          - result.record.impact == "high"
-          - result.record.urgency == "high"
+          - result.record.state == "In Progress"
+          - result.record.impact == "1 - High"
+          - result.record.urgency == "1 - High"
 
 
     - name: Update incident
@@ -104,9 +104,9 @@
     - ansible.builtin.assert:
         that:
           - result.records[0].number == test_result.record.number
-          - result.records[0].state == "in_progress"
-          - result.records[0].impact == "high"
-          - result.records[0].urgency == "high"
+          - result.records[0].state == "In Progress"
+          - result.records[0].impact == "1 - High"
+          - result.records[0].urgency == "1 - High"
 
 
     - name: Update incident with same params - unchanged
@@ -121,7 +121,7 @@
     - name: Fail closing incident without required data
       servicenow.itsm.incident:
         number: "{{ test_result.record.number }}"
-        state: closed
+        state: Closed
       ignore_errors: true
       register: result
     - ansible.builtin.assert:
@@ -135,7 +135,7 @@
       servicenow.itsm.incident: &update-incident-state
         caller: admin
         number: "{{ test_result.record.number }}"
-        state: resolved
+        state: "Resolved"
         close_code: Solved Remotely (Permanently)
         close_notes: Done testing
       check_mode: true
@@ -144,7 +144,7 @@
     - ansible.builtin.assert: &update-incident-state-result
         that:
           - result is changed
-          - result.record.state == "resolved"
+          - result.record.state == "Resolved"
           - result.record.close_code == "Solved Remotely (Permanently)"
           - result.record.close_notes == "Done testing"
 
@@ -160,7 +160,7 @@
         query:
          - caller: = admin
            number: = {{ test_result.record.number }}
-           state: = resolved
+           state: = Resolved
            close_code: = Solved Remotely (Permanently)
            close_notes: = Done testing
       register: result
@@ -170,7 +170,7 @@
           - result.records | length == 1
           - result.records[0].caller_id != ""
           - result.records[0].number == test_result.record.number
-          - result.records[0].state == "resolved"
+          - result.records[0].state == "Resolved"
           - result.records[0].close_code == "Solved Remotely (Permanently)"
           - result.records[0].close_notes == "Done testing"
 
@@ -183,7 +183,7 @@
     - ansible.builtin.assert:
         that:
           - result.records[0].number == test_result.record.number
-          - result.records[0].state == "resolved"
+          - result.records[0].state == "Resolved"
           - result.records[0].close_code == "Solved Remotely (Permanently)"
           - result.records[0].close_notes == "Done testing"
 
@@ -192,13 +192,13 @@
       servicenow.itsm.incident_info:
         query:
          - close_notes: LIKE Done testing
-           state: = resolved
+           state: = Resolved
       register: result
 
     - ansible.builtin.assert:
         that:
           - result.records[0].close_notes == "Done testing"
-          - result.records[0].state == "resolved"
+          - result.records[0].state == "Resolved"
 
 
     - name: Update incident with same state - unchanged
@@ -214,7 +214,7 @@
       servicenow.itsm.incident: &delete-incident
         caller: admin
         number: "{{ test_result.record.number }}"
-        state: absent
+        state: Absent
       check_mode: true
       register: result
 

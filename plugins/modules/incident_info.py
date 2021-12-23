@@ -185,7 +185,7 @@ records:
 from ansible.module_utils.basic import AnsibleModule
 
 from ..module_utils import arguments, attachment, client, errors, query, table, utils
-from ..module_utils.incident import PAYLOAD_FIELDS_MAPPING
+from ..module_utils.incident import get_new_payload_mapping
 
 
 def remap_caller(query, table_client):
@@ -215,13 +215,15 @@ def sysparms_query(module, table_client, mapper):
 
 
 def run(module, table_client, attachment_client):
-    mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn)
+    PAYLOAD_FIELDS_MAPPING = get_new_payload_mapping(table_client)
+    mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn) #module.fail_json)
 
     if module.params["query"]:
         query = {"sysparm_query": sysparms_query(module, table_client, mapper)}
     else:
         query = utils.filter_dict(module.params, "sys_id", "number")
 
+    records = table_client.list_records("incident", query)
     return [
         dict(
             mapper.to_ansible(record),
@@ -229,7 +231,7 @@ def run(module, table_client, attachment_client):
                 dict(table_name="incident", table_sys_id=record["sys_id"]),
             )
         )
-        for record in table_client.list_records("incident", query)
+        for record in records
     ]
 
 
@@ -245,6 +247,7 @@ def main():
     try:
         snow_client = client.Client(**module.params["instance"])
         table_client = table.TableClient(snow_client)
+
         attachment_client = attachment.AttachmentClient(snow_client)
         records = run(module, table_client, attachment_client)
         module.exit_json(changed=False, records=records)

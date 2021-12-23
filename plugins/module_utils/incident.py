@@ -7,23 +7,21 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from . import choices
 
-PAYLOAD_FIELDS_MAPPING = dict(
-    impact=[("1", "high"), ("2", "medium"), ("3", "low")],
-    urgency=[("1", "high"), ("2", "medium"), ("3", "low")],
-    state=[
-        ("1", "new"),
-        ("2", "in_progress"),
-        ("3", "on_hold"),
-        ("6", "resolved"),
-        ("7", "closed"),
-        ("8", "canceled"),
-    ],
-    hold_reason=[
-        ("", ""),  # Reason not set
-        ("1", "awaiting_caller"),
-        ("3", "awaiting_problem"),
-        ("4", "awaiting_vendor"),
-        ("5", "awaiting_change"),
-    ],
-)
+
+empty = ("", "")
+
+
+def get_new_payload_mapping(table_client):
+    choices_client = choices.ChoicesClient(table_client)
+    incident_choices = choices_client.get_grouped_choices("incident")
+
+    correct = dict(
+        impact=incident_choices["severity"],
+        urgency=incident_choices["severity"],
+        state=incident_choices["state"],
+        hold_reason=incident_choices["hold_reason"] + [empty],
+        close_code=incident_choices["close_code"] + [empty]
+    )
+    return correct

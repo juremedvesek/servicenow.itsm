@@ -151,12 +151,13 @@ from ..module_utils import (
     arguments,
     attachment,
     client,
+    choices,
     errors,
     table,
     utils,
     validation,
 )
-from ..module_utils.incident import PAYLOAD_FIELDS_MAPPING
+from ..module_utils.incident import get_new_payload_mapping
 
 DIRECT_PAYLOAD_FIELDS = (
     "state",
@@ -171,6 +172,7 @@ DIRECT_PAYLOAD_FIELDS = (
 
 
 def ensure_absent(module, table_client, attachment_client):
+    PAYLOAD_FIELDS_MAPPING = get_new_payload_mapping(table_client)
     mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn)
     query = utils.filter_dict(module.params, "sys_id", "number")
     incident = table_client.get_record("incident", query)
@@ -200,7 +202,7 @@ def build_payload(module, table_client):
 
 def validate_params(params, incident=None):
     missing = []
-    if params["state"] in ("resolved", "closed"):
+    if params["state"] in ("Resolved", "Closed"):
         missing.extend(
             validation.missing_from_params_and_remote(
                 ("close_code", "close_notes"), params, incident
@@ -214,6 +216,7 @@ def validate_params(params, incident=None):
 
 
 def ensure_present(module, table_client, attachment_client):
+    PAYLOAD_FIELDS_MAPPING = get_new_payload_mapping(table_client)
     mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn)
     query = utils.filter_dict(module.params, "sys_id", "number")
     payload = build_payload(module, table_client)
@@ -272,7 +275,7 @@ def ensure_present(module, table_client, attachment_client):
 
 
 def run(module, table_client, attachment_client):
-    if module.params["state"] == "absent":
+    if module.params["state"] == "Absent":
         return ensure_absent(module, table_client, attachment_client)
     return ensure_present(module, table_client, attachment_client)
 
@@ -282,15 +285,6 @@ def main():
         arguments.get_spec("instance", "sys_id", "number", "attachments"),
         state=dict(
             type="str",
-            choices=[
-                "new",
-                "in_progress",
-                "on_hold",
-                "resolved",
-                "closed",
-                "canceled",
-                "absent",
-            ],
         ),
         hold_reason=dict(
             type="str",
@@ -312,31 +306,12 @@ def main():
         ),
         impact=dict(
             type="str",
-            choices=[
-                "low",
-                "medium",
-                "high",
-            ],
         ),
         urgency=dict(
             type="str",
-            choices=[
-                "low",
-                "medium",
-                "high",
-            ],
         ),
         close_code=dict(
             type="str",
-            choices=[
-                "Solved (Work Around)",
-                "Solved (Permanently)",
-                "Solved Remotely (Work Around)",
-                "Solved Remotely (Permanently)",
-                "Not Solved (Not Reproducible)",
-                "Not Solved (Too Costly)",
-                "Closed/Resolved by Caller",
-            ],
         ),
         close_notes=dict(
             type="str",
@@ -345,13 +320,12 @@ def main():
             type="dict",
         ),
     )
-
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True,
         required_if=[
-            ("state", "absent", ("sys_id", "number"), True),
-            ("state", "on_hold", ("hold_reason",)),
+            ("state", "Absent", ("sys_id", "number"), True),
+            ("state", "On hold", ("hold_reason",)),
         ],
         # If there is no sys id or number create a new ticket
     )
