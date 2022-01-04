@@ -9,11 +9,13 @@ __metaclass__ = type
 
 from . import errors
 
+
 class ChoicesClient:
     def __init__(self, table_client, table_name, mapping):
         self.table_client = table_client
         self.table_name = table_name
         self.table_client = table_client
+        self.mapping = mapping
 
     def get_choices(self, table_name, element=None):
         query = {
@@ -38,4 +40,4 @@ class ChoicesClient:
         data = self.get_choices(self.table_name)
         grouped = self.group_choices(data)
         mapped = self.mapping(grouped)
-        return mapping
+        return mapped

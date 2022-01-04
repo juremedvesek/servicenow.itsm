@@ -251,7 +251,7 @@ def main():
         records = run(module, table_client, choices_client, attachment_client)
         module.exit_json(changed=False, records=records)
     except errors.ServiceNowError as e:
-        raise
+        #raise
         module.fail_json(msg=str(e))
 
 
