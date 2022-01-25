@@ -20,6 +20,16 @@ INCIDENT_MAPPING_SPEC = dict(
     ),
 )
 
+CONFIGURATION_ITEM_MAPPING_SPEC = dict(
+    type="dict",
+    required=False,
+    options=dict(
+        environment=dict(type="dict"),
+        install_status=dict(type="dict"),
+        operational_status=dict(type="dict"),
+    ),
+)
+
 SHARED_SPECS = dict(
     instance=dict(
         type="dict",
@@ -92,7 +102,12 @@ SHARED_SPECS = dict(
         ),
     ),
     mapping=dict(
-        type="dict", required=False, options=dict(incident=INCIDENT_MAPPING_SPEC)
+        type="dict",
+        required=False,
+        options=dict(
+            incident=INCIDENT_MAPPING_SPEC,
+            configuration_item=CONFIGURATION_ITEM_MAPPING_SPEC,
+        ),
     ),
 )
 

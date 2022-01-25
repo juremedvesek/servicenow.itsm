@@ -52,14 +52,14 @@ options:
           environment:
             description:
               - The environment to which this configuration item belongs.
-            type: str
+            type: dict
           install_status:
             description:
               - The functional status of the configuration item.
               - Special value that can not be overridden is C(absent), which would remove a configuration item from ServiceNow.
-            type: str
+            type: dict
           operational_status:
             description:
               - The operational status of the configuration item.
-            type: str
+            type: dict
 """
