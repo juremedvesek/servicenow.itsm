@@ -43,4 +43,23 @@ options:
             description:
               - The extent to which resolution of an incident can bear delay.
             type: dict
+      configuration_item:
+        description:
+          - User mappings for Configuration item object
+          - Where mapping is not set, the default will be used.
+        type: dict
+        suboptions:
+          environment:
+            description:
+              - The environment to which this configuration item belongs.
+            type: str
+          install_status:
+            description:
+              - The functional status of the configuration item.
+              - Special value that can not be overridden is C(absent), which would remove a configuration item from ServiceNow.
+            type: str
+          operational_status:
+            description:
+              - The operational status of the configuration item.
+            type: str
 """

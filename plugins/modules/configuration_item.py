@@ -29,6 +29,7 @@ extends_documentation_fragment:
   - servicenow.itsm.instance
   - servicenow.itsm.sys_id
   - servicenow.itsm.attachments
+  - servicenow.itsm.mapping
 
 seealso:
   - module: servicenow.itsm.configuration_item_info
@@ -262,6 +263,7 @@ from ansible.module_utils.basic import AnsibleModule
 
 from ..module_utils import arguments, attachment, client, errors, table, utils
 from ..module_utils.configuration_item import PAYLOAD_FIELDS_MAPPING
+from ..module_utils.utils import get_mapper
 
 DIRECT_PAYLOAD_FIELDS = (
     "name",
@@ -279,7 +281,7 @@ DIRECT_PAYLOAD_FIELDS = (
 
 
 def ensure_absent(module, table_client, attachment_client):
-    mapper = utils.PayloadMapper(PAYLOAD_FIELDS_MAPPING, module.warn)
+    mapper = get_mapper(module, "configuration_item", PAYLOAD_FIELDS_MAPPING)
     query = utils.filter_dict(module.params, "sys_id")
     configuration_item = table_client.get_record("cmdb_ci", query)
 
@@ -389,7 +391,7 @@ def run(module, table_client, attachment_client):
 
 def main():
     module_args = dict(
-        arguments.get_spec("instance", "sys_id", "attachments"),
+        arguments.get_spec("instance", "sys_id", "attachments", "mapping"),
         state=dict(
             type="str",
             choices=[
