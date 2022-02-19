@@ -414,7 +414,45 @@ def validate_params(params, problem=None):
         )
 
 
-def ensure_present(module, table_client, attachment_client):
+def execute_fix(module, snow_client, mapper, new, descriptor):
+    action, state_before, state_after = descriptor
+    if module.params["state"] != state_after:
+        return new
+
+    if new["state"] not in state_before:
+        return new
+
+    # first check that all mandatory fields are set ..
+
+    # execute
+    response = snow_client.request(
+        "PUT",
+        f"/api/738134/ansible_problem/{action}",
+        query=dict(problem_sys_id=module.params["sys_id"])
+    )
+    result = response.json["result"]
+    fix_as_ansible = mapper.to_ansible(result)
+    new["state"] = fix_as_ansible["state"]
+    new["problem_state"] = fix_as_ansible["problem_state"]
+    module.warn(new["state"])
+
+    return new
+
+
+def fix(module, snow_client, mapper, new):
+    # endpoint, valid before states, state after
+    fixes = {
+        "root_cause_analysis": ("confirm", ["assess"], "root_cause_analysis"),
+        "fix_in_progress": ("fix", ["root_cause_analysis"], "fix_in_progress"),
+        "resolved": ("resolve", ["fix_in_progress"], "resolved")
+    }
+    proposed_fix = fixes.get(module.params["state"], None)
+    if not proposed_fix:
+        return new
+    return execute_fix(module, snow_client, mapper, new, proposed_fix)
+
+
+def ensure_present(module, snow_client, table_client, attachment_client):
     mapper = get_mapper(module, "problem_mapping", PAYLOAD_FIELDS_MAPPING)
     query = utils.filter_dict(module.params, "sys_id", "number")
     payload = build_payload(module, table_client)
@@ -430,6 +468,14 @@ def ensure_present(module, table_client, attachment_client):
                 "problem", mapper.to_snow(payload), module.check_mode
             )
         )
+
+        # think that / -> root_case_analysis id not valid but still
+        if module.params["state"] == "root_cause_analysis" and new["state"] == "assess":
+            # first check that all mandatory fields are set ..
+
+            # execute
+            updated = snow_client.request("PUT", "/api/738134/ansible_problem", query=dict(problem_sys_id=module.params["sys_id"]))
+            module.fail_json(f"Problem endpoint is not working- create! updated: {updated}")
 
         # When we execute in check mode, new["sys_id"] is not defined.
         # In order to give users back as much info as possible, we fake the sys_id in the
@@ -461,6 +507,8 @@ def ensure_present(module, table_client, attachment_client):
             "problem", mapper.to_snow(old), mapper.to_snow(payload), module.check_mode
         )
     )
+
+    new = fix(module, snow_client, mapper, new)
     new["attachments"] = attachment_client.update_records(
         "problem",
         old["sys_id"],
@@ -472,10 +520,10 @@ def ensure_present(module, table_client, attachment_client):
     return True, new, dict(before=old, after=new)
 
 
-def run(module, table_client, attachment_client):
+def run(module, snow_client, table_client, attachment_client):
     if module.params["state"] == "absent":
         return ensure_absent(module, table_client, attachment_client)
-    return ensure_present(module, table_client, attachment_client)
+    return ensure_present(module, snow_client, table_client, attachment_client)
 
 
 def main():
@@ -539,7 +587,7 @@ def main():
         snow_client = client.Client(**module.params["instance"])
         table_client = table.TableClient(snow_client)
         attachment_client = attachment.AttachmentClient(snow_client)
-        changed, record, diff = run(module, table_client, attachment_client)
+        changed, record, diff = run(module, snow_client, table_client, attachment_client)
         module.exit_json(changed=changed, record=record, diff=diff)
     except errors.ServiceNowError as e:
         module.fail_json(msg=str(e))
