@@ -3,11 +3,11 @@
     SN_HOST: "{{ sn_host }}"
     SN_USERNAME: "{{ sn_username }}"
     SN_PASSWORD: "{{ sn_password }}"
-
+    SN_APPLICATION_ID: "{{ sn_application_id }}"
   block:
-    - name: Retrieve problem records
-      servicenow.itsm.problem_info:
-      register: initial
+    #- name: Retrieve problem records
+    #  servicenow.itsm.problem_info:
+    #  register: initial
 
     - name: Create a problem (check mode)
       servicenow.itsm.problem: &problem-create
@@ -25,24 +25,24 @@
           - first_problem.record.attachments | length != 0
           - first_problem.record.attachments[0].file_name == "sample_file.txt"
 
-    - name: Verify creation in check mode did not create a record
-      servicenow.itsm.problem_info:
-      register: result
-    - ansible.builtin.assert:
-        that:
-          - result.records | length == initial.records | length
+    #- name: Verify creation in check mode did not create a record
+    #  servicenow.itsm.problem_info:
+    #  register: result
+    #- ansible.builtin.assert:
+    #    that:
+    #      - result.records | length == initial.records | length
 
     - name: Create a problem
       servicenow.itsm.problem: *problem-create
       register: first_problem
     - ansible.builtin.assert: *problem-create-assertions
 
-    - name: Verify that a new record was created
-      servicenow.itsm.problem_info:
-      register: result
-    - ansible.builtin.assert:
-        that:
-          - result.records | length == initial.records | length + 1
+    #- name: Verify that a new record was created
+    #  servicenow.itsm.problem_info:
+    #  register: result
+    #- ansible.builtin.assert:
+    #   that:
+    #      - result.records | length == initial.records | length + 1
 
     - name: Create a problem (idempotence)
       servicenow.itsm.problem:
@@ -181,14 +181,14 @@
     - name: Cancel a problem
       servicenow.itsm.problem:
         sys_id: "{{ bogus_problem.record.sys_id }}"
-        state: resolved
+        state: closed
         resolution_code: canceled
         close_notes: closing
       register: result
     - ansible.builtin.assert:
         that:
           - result is changed
-          - result.record.state == "resolved"
+          - result.record.state == "closed"
           # FIXME: Uncomment the line below once the issue with setting resolution code at the ServiceNow side is resolved.
           #- result.record.resolution_code == "canceled"
           - result.record.close_notes == "closing"

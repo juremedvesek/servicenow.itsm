@@ -430,6 +430,10 @@ def execute_fix(module, snow_client, mapper, new, descriptor):
         f"/api/738134/ansible_problem/{action}",
         query=dict(problem_sys_id=module.params["sys_id"])
     )
+
+    if response.status >= 400:
+        module.fail_json("Failed. Server response was: " + response.data)
+
     result = response.json["result"]
     fix_as_ansible = mapper.to_ansible(result)
     new["state"] = fix_as_ansible["state"]
@@ -442,9 +446,26 @@ def execute_fix(module, snow_client, mapper, new, descriptor):
 def fix(module, snow_client, mapper, new):
     # endpoint, valid before states, state after
     fixes = {
-        "root_cause_analysis": ("confirm", ["assess"], "root_cause_analysis"),
-        "fix_in_progress": ("fix", ["root_cause_analysis"], "fix_in_progress"),
-        "resolved": ("resolve", ["fix_in_progress"], "resolved")
+        "root_cause_analysis": (
+            "confirm",
+            ["assess", "fix_in_progress", "resolved", "closed"],
+            "root_cause_analysis"
+        ),
+        "fix_in_progress": (
+            "fix",
+            ["root_cause_analysis"],
+            "fix_in_progress"
+        ),
+        "resolved": (
+            "resolve",
+            ["fix_in_progress"],
+            "resolved"
+        ),
+        "closed": (
+            "close",
+            ["assess", "root_cause_analysis", "fix_in_progress", "resolved"],
+            "closed"
+        )
     }
     proposed_fix = fixes.get(module.params["state"], None)
     if not proposed_fix:
