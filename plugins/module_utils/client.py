@@ -54,6 +54,7 @@ class Client:
         client_id=None,
         client_secret=None,
         timeout=None,
+        application_id=None
     ):
         if not (host or "").startswith(("https://", "http://")):
             raise ServiceNowError(
@@ -69,6 +70,7 @@ class Client:
         self.client_secret = client_secret
         self.refresh_token = refresh_token
         self.timeout = timeout
+        self.application_id = application_id
 
         self._auth_header = None
         self._client = Request()

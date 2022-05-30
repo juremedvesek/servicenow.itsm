@@ -427,12 +427,12 @@ def execute_fix(module, snow_client, mapper, new, descriptor):
     # execute
     response = snow_client.request(
         "PUT",
-        f"/api/738134/ansible_problem/{action}",
+        f"/api/{snow_client.application_id}/ansible_problem/{action}",
         query=dict(problem_sys_id=module.params["sys_id"])
     )
 
     if response.status >= 400:
-        module.fail_json("Failed. Server response was: " + response.data)
+        module.fail_json("Failed. Server response was: " + response.data.decode('utf-8'))
 
     result = response.json["result"]
     fix_as_ansible = mapper.to_ansible(result)
@@ -495,7 +495,7 @@ def ensure_present(module, snow_client, table_client, attachment_client):
             # first check that all mandatory fields are set ..
 
             # execute
-            updated = snow_client.request("PUT", "/api/738134/ansible_problem", query=dict(problem_sys_id=module.params["sys_id"]))
+            updated = snow_client.request("PUT", f"/api/{snow_client.application_id}/ansible_problem", query=dict(problem_sys_id=module.params["sys_id"]))
             module.fail_json(f"Problem endpoint is not working- create! updated: {updated}")
 
         # When we execute in check mode, new["sys_id"] is not defined.
