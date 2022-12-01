@@ -7,23 +7,18 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+INCIDENT_QUERY = "incident"
 
-PAYLOAD_FIELDS_MAPPING = dict(
-    impact=[("1", "high"), ("2", "medium"), ("3", "low")],
-    urgency=[("1", "high"), ("2", "medium"), ("3", "low")],
-    state=[
-        ("1", "new"),
-        ("2", "in_progress"),
-        ("3", "on_hold"),
-        ("6", "resolved"),
-        ("7", "closed"),
-        ("8", "canceled"),
-    ],
-    hold_reason=[
-        ("", ""),  # Reason not set
-        ("1", "awaiting_caller"),
-        ("3", "awaiting_problem"),
-        ("4", "awaiting_vendor"),
-        ("5", "awaiting_change"),
-    ],
-)
+
+empty = ("", "")
+
+
+def incident_mapping(choices):
+    correct = dict(
+        impact=choices["severity"],
+        urgency=choices["severity"],
+        state=choices["state"],
+        hold_reason=choices["hold_reason"] + [empty],
+        close_code=choices["close_code"] + [empty]
+    )
+    return correct

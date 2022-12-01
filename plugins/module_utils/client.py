@@ -143,6 +143,7 @@ class Client:
         url = "{0}/api/now/{1}".format(self.host, escaped_path)
         if query:
             url = "{0}?{1}".format(url, urlencode(query))
+
         headers = dict(headers or DEFAULT_HEADERS, **self.auth_header)
         if data is not None:
             data = json.dumps(data, separators=(",", ":"))

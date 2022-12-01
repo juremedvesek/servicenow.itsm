@@ -62,7 +62,7 @@ class TestMain:
 
 
 class TestRun:
-    def test_run(self, create_module, table_client, attachment_client):
+    def test_run(self, create_module, table_client, choices_client, attachment_client):
         module = create_module(
             params=dict(
                 instance=dict(host="https://my.host.name", username="user", password="pass"),
@@ -76,6 +76,7 @@ class TestRun:
             dict(q=2, sys_id=4321),
             dict(r=3, sys_id=1212),
         ]
+
         attachment_client.list_records.side_effect = [
             [
                 {
@@ -90,7 +91,9 @@ class TestRun:
             [],
         ]
 
-        records = incident_info.run(module, table_client, attachment_client)
+        choices_client.get_grouped_choices.return_value = {}
+
+        records = incident_info.run(module, table_client, choices_client, attachment_client)
 
         table_client.list_records.assert_called_once_with(
             "incident", dict(number="INC001")

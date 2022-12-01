@@ -19,6 +19,7 @@ from ansible_collections.servicenow.itsm.plugins.module_utils.table import Table
 from ansible_collections.servicenow.itsm.plugins.module_utils.attachment import (
     AttachmentClient,
 )
+from ansible_collections.servicenow.itsm.plugins.module_utils.choices import ChoicesClient
 
 
 @pytest.fixture
@@ -34,6 +35,11 @@ def table_client(mocker):
 @pytest.fixture
 def attachment_client(mocker):
     return mocker.Mock(spec=AttachmentClient)
+
+
+@pytest.fixture
+def choices_client(mocker):
+    return mocker.Mock(spec=ChoicesClient)
 
 
 @pytest.fixture
@@ -73,7 +79,7 @@ def fail_json_mock(self, **result):
     raise AnsibleRunEnd(False, result)
 
 
-def run_mock(module, client, another_client=None):
+def run_mock(module, client, another_client=None, yet_another_client=None):
     return False, {}, dict(before={}, after={})
 
 

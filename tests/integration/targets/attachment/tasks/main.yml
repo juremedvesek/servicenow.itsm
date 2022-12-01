@@ -235,10 +235,10 @@
     - name: Create test incident with attachment - check mode
       servicenow.itsm.incident: &create-incident-attachment
         caller: admin
-        state: new
+        state: "New"
         short_description: Test incident
-        impact: low
-        urgency: low
+        impact: "3 - Low"
+        urgency: "3 - Low"
         attachments:
           - path: targets/attachment/res/sample_file1.txt
       check_mode: true
@@ -247,9 +247,9 @@
     - ansible.builtin.assert: &create-incident-attachment-result
         that:
           - result is changed
-          - result.record.state == "new"
-          - result.record.impact == "low"
-          - result.record.urgency == "low"
+          - result.record.state == "New"
+          - result.record.impact == "3 - Low"
+          - result.record.urgency == "3 - Low"
           - result.record.attachments | length == 1
           - result.record.attachments[0].file_name == "sample_file1.txt"
 
